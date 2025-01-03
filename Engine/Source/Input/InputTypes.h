@@ -18,6 +18,11 @@ enum class GamepadType
 {
     Standard,
     GameCube,
+    GCNBongos,
+    GCNMat,
+    GCNKeyboard,
+    GCNSteering,
+    GCNGBA,
     Wiimote,
     WiiClassic,
 
@@ -96,7 +101,8 @@ enum GamepadButtonCode
     GAMEPAD_RIGHT,
     GAMEPAD_UP,
     GAMEPAD_DOWN,
-    GAMEPAD_HOME
+    GAMEPAD_HOME,
+    GAMEPAD_PEDALCONNECT
 };
 
 enum GamepadAxisCode
@@ -582,6 +588,120 @@ enum KeyCode
     KEY_QUOTE = 48,
 
     KEY_DECIMAL = 91
+};
+
+#elif PLATFORM_GAMECUBE
+
+//GC Keyboard uses different keycodes than USB Keyboard on Wii
+//Assume GC Keyboard is only used on GameCube
+enum KeyCode
+{
+    KEY_BACK = 80,
+    KEY_ESCAPE = 76,
+
+    KEY_0 = 51,
+    KEY_1 = 42,
+    KEY_2 = 43,
+    KEY_3 = 44,
+    KEY_4 = 45,
+    KEY_5 = 46,
+    KEY_6 = 47,
+    KEY_7 = 48,
+    KEY_8 = 49,
+    KEY_9 = 50,
+
+    KEY_A = 16,
+    KEY_B = 17,
+    KEY_C = 18,
+    KEY_D = 19,
+    KEY_E = 20,
+    KEY_F = 21,
+    KEY_G = 22,
+    KEY_H = 23,
+    KEY_I = 24,
+    KEY_J = 25,
+    KEY_K = 26,
+    KEY_L = 27,
+    KEY_M = 28,
+    KEY_N = 29,
+    KEY_O = 30,
+    KEY_P = 31,
+    KEY_Q = 32,
+    KEY_R = 33,
+    KEY_S = 34,
+    KEY_T = 35,
+    KEY_U = 36,
+    KEY_V = 37,
+    KEY_W = 38,
+    KEY_X = 39,
+    KEY_Y = 40,
+    KEY_Z = 41,
+
+    KEY_SPACE = 89,
+    KEY_ENTER = 97,
+    KEY_BACKSPACE = 80,
+    KEY_TAB = 81,
+
+    KEY_SHIFT_L = 84,
+    KEY_CONTROL_L = 86,
+    KEY_ALT_L = 87,
+    KEY_SHIFT_R = 85,
+    KEY_CONTROL_R = 90, //undefined on GC Keyboard
+    KEY_ALT_R = 91, //undefined on GC Keyboard
+
+    KEY_INSERT = 77,
+    KEY_DELETE = 78,
+    KEY_HOME = 6,
+    KEY_END = 7,
+    KEY_PAGE_UP = 8,
+    KEY_PAGE_DOWN = 9,
+
+    KEY_UP = 94,
+    KEY_DOWN = 93,
+    KEY_LEFT = 92,
+    KEY_RIGHT = 95,
+
+    KEY_NUMPAD0 = 98,
+    KEY_NUMPAD1 = 99,
+    KEY_NUMPAD2 = 100,
+    KEY_NUMPAD3 = 101,
+    KEY_NUMPAD4 = 102,
+    KEY_NUMPAD5 = 103,
+    KEY_NUMPAD6 = 104,
+    KEY_NUMPAD7 = 105,
+    KEY_NUMPAD8 = 106,
+    KEY_NUMPAD9 = 107,
+
+    KEY_F1 = 64,
+    KEY_F2 = 65,
+    KEY_F3 = 66,
+    KEY_F4 = 67,
+    KEY_F5 = 68,
+    KEY_F6 = 69,
+    KEY_F7 = 70,
+    KEY_F8 = 71,
+    KEY_F9 = 72,
+    KEY_F10 = 73,
+    KEY_F11 = 74,
+    KEY_F12 = 75,
+
+    KEY_PERIOD = 61,
+    KEY_COMMA = 60,
+    KEY_PLUS = 57, //hold shift
+    KEY_MINUS = 52,
+
+    KEY_COLON = 58,
+    KEY_QUESTION = 62, //hold shift
+    KEY_SQUIGGLE = 53, //hold shift
+    KEY_LEFT_BRACKET = 56,
+    KEY_BACK_SLASH = 63,
+    //KEY_BACK_SLASH_2 = 54,
+    KEY_RIGHT_BRACKET = 59,
+    KEY_QUOTE = 55,
+
+    KEY_DECIMAL = 0x6E
+    //KEY_GRAVE = 79,
+    //KEY_CAPSLOCK = 83,
 };
 
 #else // All other platforms

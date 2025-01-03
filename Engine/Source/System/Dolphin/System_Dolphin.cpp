@@ -17,6 +17,15 @@
 #include <fat.h>
 #include <ogc/lwp_watchdog.h>
 
+#if PLATFORM_WII
+#include <wiikeyboard/usbkeyboard.h>
+
+void KBEventHandler(USBKeyboard_event event);
+void* kbd_thread(void* arg);
+s8 WiiKB_Init(void);
+void WiiKB_Shutdown(void);
+#endif
+
 static bool sFatInit = false;
 static void InitFAT()
 {
@@ -82,11 +91,18 @@ void SYS_Initialize()
     //printf("\x1b[2;0H");
 
     InitFAT();
+
+#if PLATFORM_WII
+    WiiKB_Init();
+#endif
+
 }
 
 void SYS_Shutdown()
 {
-
+#if PLATFORM_WII
+    WiiKB_Shutdown();
+#endif
 }
 
 void SYS_Update()
@@ -754,5 +770,83 @@ bool SYS_IsFullscreen()
 {
     return true;
 }
+
+#if PLATFORM_WII
+/*
+ * priiloader - Copyright (C) 2008-2019 DacoTaco
+ * deal with licensing stuff later
+*/
+
+s8 _input_init = 0;
+static lwp_t kbd_handle = LWP_THREAD_NULL;
+static volatile bool kbd_should_quit = false;
+
+void KBEventHandler(USBKeyboard_event event)
+{
+    //gprintf("KB event %d", event.type);
+    //gprintf("keyCode 0x%X", event.keyCode);
+
+    if (event.type == USBKEYBOARD_PRESSED) {
+        INP_SetKey(event.keyCode);
+        return;
+    }
+    else if (event.type != USBKEYBOARD_RELEASED) {
+        INP_ClearKey(event.keyCode);
+        return;
+    }
+}
+
+void* kbd_thread(void* arg)
+{
+    while (!kbd_should_quit)
+    {
+        if (!USBKeyboard_IsConnected() && USBKeyboard_Open(KBEventHandler))
+        {
+            //wake up the keyboard by sending it a command.
+            USBKeyboard_SetLed(USBKEYBOARD_LEDCAPS, false);
+        }
+
+        USBKeyboard_Scan();
+        usleep(400);
+    }
+    return NULL;
+}
+
+
+s8 WiiKB_Init(void)
+{
+    if (_input_init) {
+        return 1;
+    }
+    
+    s8 r = USB_Initialize();
+    r |= USBKeyboard_Initialize();
+
+    // Even if the thread fails to start, 
+    kbd_should_quit = false;
+    LWP_CreateThread(&kbd_handle,
+        kbd_thread,
+        NULL,
+        NULL,
+        16 * 1024,
+        50);
+
+    _input_init = 1;
+    return r;
+}
+void WiiKB_Shutdown(void)
+{
+    //signal thread to exit, if it would hang on a USBRead the close will cancel it.
+    kbd_should_quit = true;
+    USBKeyboard_Close();
+    USBKeyboard_Deinitialize();
+
+    if (kbd_handle != LWP_THREAD_NULL) {
+        LWP_JoinThread(kbd_handle, NULL);
+        kbd_handle = LWP_THREAD_NULL;
+    }
+    _input_init = 0;
+}
+#endif
 
 #endif
