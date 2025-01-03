@@ -218,11 +218,11 @@ void INP_Update()
             u8* key = (u8*)&keys;
 
             keys = GCKB_ReadKeys(i);
+            INP_ClearAllKeys();
             if (keys == 0)
             {
                 continue;
             }
-            INP_ClearAllKeys();
             INP_SetKey(key[0]);
             INP_SetKey(key[1]);
             INP_SetKey(key[2]);
@@ -349,7 +349,6 @@ u32 GCKB_Init(void) {
     return 1;
 }
 
-//use this instead of GCKB_Detect
 u32 GCKB_ScanKybd(void) {
     u32 connected = 0;
     KYBDStatus kybdstatus[PAD_CHANMAX];
