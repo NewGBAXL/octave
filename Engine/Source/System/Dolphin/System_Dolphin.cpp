@@ -20,6 +20,10 @@
 #if PLATFORM_WII
 #include <wiikeyboard/usbkeyboard.h>
 
+static s8 _input_init = 0;
+static ThreadObject* kbd_handle = NULL;
+static volatile bool kbd_should_quit = false;
+
 void KBEventHandler(USBKeyboard_event event);
 void* kbd_thread(void* arg);
 s8 WiiKB_Init(void);
@@ -107,7 +111,28 @@ void SYS_Shutdown()
 
 void SYS_Update()
 {
+#if PLATFORM_WII    
+    WiiKB_Init();
 
+    s32 open = USBKeyboard_Open(KBEventHandler);
+    if (!USBKeyboard_IsConnected() && open == 1)
+    {
+        //wake up the keyboard by sending it a command.
+        LogDebug("USBKeyboard_Open success but asleep\n");
+        //USBKeyboard_SetLed(USBKEYBOARD_LEDCAPS, false);
+    }
+    else if (open == 1)
+    {
+        LogDebug("USBKeyboard_Open success\n");
+    }
+    else
+    {
+        LogDebug("USBKeyboard_Open failed\n");
+    }
+
+    USBKeyboard_Scan();
+    SYS_Sleep(400);
+#endif
 }
 
 // Files
@@ -777,20 +802,18 @@ bool SYS_IsFullscreen()
  * deal with licensing stuff later
 */
 
-s8 _input_init = 0;
-static lwp_t kbd_handle = LWP_THREAD_NULL;
-static volatile bool kbd_should_quit = false;
-
 void KBEventHandler(USBKeyboard_event event)
 {
     //gprintf("KB event %d", event.type);
     //gprintf("keyCode 0x%X", event.keyCode);
 
     if (event.type == USBKEYBOARD_PRESSED) {
+		LogDebug("Key pressed: %d\n", event.keyCode);
         INP_SetKey(event.keyCode);
         return;
     }
     else if (event.type != USBKEYBOARD_RELEASED) {
+        LogDebug("Key released: %d\n", event.keyCode);
         INP_ClearKey(event.keyCode);
         return;
     }
@@ -800,14 +823,24 @@ void* kbd_thread(void* arg)
 {
     while (!kbd_should_quit)
     {
-        if (!USBKeyboard_IsConnected() && USBKeyboard_Open(KBEventHandler))
+		s32 open = USBKeyboard_Open(KBEventHandler);
+        if (!USBKeyboard_IsConnected() && open == 1)
         {
             //wake up the keyboard by sending it a command.
-            USBKeyboard_SetLed(USBKEYBOARD_LEDCAPS, false);
+            LogDebug("USBKeyboard_Open success but asleep\n");
+            //USBKeyboard_SetLed(USBKEYBOARD_LEDCAPS, false);
+        }
+		else if (open == 1)
+		{
+			LogDebug("USBKeyboard_Open success\n");
+		}
+        else
+        {
+			LogDebug("USBKeyboard_Open failed\n");
         }
 
         USBKeyboard_Scan();
-        usleep(400);
+        SYS_Sleep(400);
     }
     return NULL;
 }
@@ -815,6 +848,7 @@ void* kbd_thread(void* arg)
 
 s8 WiiKB_Init(void)
 {
+    //LogDebug("trying to turn on keyboard\n");
     if (_input_init) {
         return 1;
     }
@@ -824,27 +858,20 @@ s8 WiiKB_Init(void)
 
     // Even if the thread fails to start, 
     kbd_should_quit = false;
-    LWP_CreateThread(&kbd_handle,
-        kbd_thread,
-        NULL,
-        NULL,
-        16 * 1024,
-        50);
-
+	//if (r != 0 && kbd_handle == NULL) {
+    //    kbd_handle = SYS_CreateThread(kbd_thread, NULL);
+	//}
+	
     _input_init = 1;
     return r;
 }
 void WiiKB_Shutdown(void)
 {
-    //signal thread to exit, if it would hang on a USBRead the close will cancel it.
     kbd_should_quit = true;
     USBKeyboard_Close();
     USBKeyboard_Deinitialize();
 
-    if (kbd_handle != LWP_THREAD_NULL) {
-        LWP_JoinThread(kbd_handle, NULL);
-        kbd_handle = LWP_THREAD_NULL;
-    }
+	SYS_DestroyThread(kbd_handle);
     _input_init = 0;
 }
 #endif

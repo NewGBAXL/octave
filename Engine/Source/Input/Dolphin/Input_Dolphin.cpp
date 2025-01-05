@@ -19,6 +19,7 @@ typedef struct _gckbstatus {
 } KYBDStatus;
 
 u32 GCKB_Init(void);
+u32 GCKB_Init(int chan);
 u32 GCKB_ScanKybd(void);
 u32 GCKB_ScanPads(void);
 u32 GCKB_Read(KYBDStatus* status);
@@ -41,7 +42,7 @@ void INP_Initialize()
     }
 #else
     PAD_Init();
-    GCKB_Init();
+    //GCKB_Init();
 #endif
 }
 
@@ -323,6 +324,7 @@ bool INP_IsSoftKeyboardShown()
 #define PAD_ERR_NO_CONTROLLER -1
 
 static u32 __kybd_initialized = 0;
+static u32 __kybd_initialized_chan[4] = { 0, 0, 0, 0 };
 static u32 __kybd_keysbuffer[PAD_CHANMAX];
 
 static void SI_AwaitPendingCommands(void) {
@@ -338,7 +340,7 @@ u32 GCKB_Init(void) {
     chan = 0;
     while (chan < 4) {
         SI_GetResponse(chan, buf);
-        //SI_SetCommand(chan, 0x00540000);
+        SI_SetCommand(chan, 0x00540000);
         SI_EnablePolling(PAD_ENABLEDMASK(chan));
         SI_TransferCommands();
         SI_AwaitPendingCommands();
@@ -346,6 +348,22 @@ u32 GCKB_Init(void) {
     }
 
     __kybd_initialized = 1;
+    return 1;
+}
+
+u32 GCKB_Init(int chan) {
+    u32 buf[2];
+
+    if (__kybd_initialized_chan[chan]) return 1;
+
+    SI_GetResponse(chan, buf);
+    SI_SetCommand(chan, 0x00540000);
+    SI_EnablePolling(PAD_ENABLEDMASK(chan));
+    SI_TransferCommands();
+    SI_AwaitPendingCommands();
+
+
+	__kybd_initialized_chan[chan] = 1;
     return 1;
 }
 
@@ -406,6 +424,7 @@ u32 GCKB_Read(KYBDStatus* status) {
 
 u32 GCKB_ReadKeys(int pad) {
     if (pad<PAD_CHAN0 || pad>PAD_CHAN3) return 0;
+	GCKB_Init(pad);
 
     u32 buffer[2] = { 0, 0 };
     if (SI_GetResponse(pad, buffer)) {
